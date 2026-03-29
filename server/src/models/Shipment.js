@@ -43,4 +43,8 @@ shipmentSchema.pre('save', function genTracking(next) {
   next();
 });
 
+shipmentSchema.index({ customer: 1, updatedAt: -1 });
+shipmentSchema.index({ updatedAt: -1 });
+shipmentSchema.index({ status: 1, updatedAt: -1 });
+
 export default mongoose.model('SChainShipment', shipmentSchema);

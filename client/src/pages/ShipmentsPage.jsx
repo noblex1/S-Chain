@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import api from '../api';
 import { useAuth } from '../context/AuthContext.jsx';
 import ShipmentCard from '../components/ShipmentCard.jsx';
@@ -12,6 +12,9 @@ export default function ShipmentsPage() {
   const [shipments, setShipments] = useState([]);
   const [customers, setCustomers] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [page, setPage] = useState(1);
+  const [statusFilter, setStatusFilter] = useState('');
+  const [meta, setMeta] = useState({ total: 0, totalPages: 0, limit: 20 });
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState({
     customerId: '',
@@ -28,21 +31,33 @@ export default function ShipmentsPage() {
   const canCreate = isAdmin || isLogistics || isCustomer;
   const canExport = isAdmin || isLogistics;
 
-  const load = async () => {
+  const load = useCallback(async () => {
     setLoading(true);
     try {
-      const { data } = await api.get('/shipments');
-      setShipments(data);
+      const params = { page, limit: 12 };
+      if (statusFilter) params.status = statusFilter;
+      const { data } = await api.get('/shipments', { params });
+      setShipments(data.items || []);
+      setMeta({
+        total: data.total ?? 0,
+        totalPages: data.totalPages ?? 0,
+        limit: data.limit ?? 12,
+      });
     } catch {
       setShipments([]);
+      setMeta({ total: 0, totalPages: 0, limit: 12 });
     } finally {
       setLoading(false);
     }
-  };
+  }, [page, statusFilter]);
 
   useEffect(() => {
     load();
-  }, []);
+  }, [load]);
+
+  useEffect(() => {
+    setPage(1);
+  }, [statusFilter]);
 
   useEffect(() => {
     (async () => {
@@ -95,10 +110,28 @@ export default function ShipmentsPage() {
     }
   };
 
-  const exportCsv = () => {
+  const exportCsv = async () => {
+    const limit = 100;
+    const maxPages = 100;
+    const all = [];
+    try {
+      let p = 1;
+      while (p <= maxPages) {
+        const params = { page: p, limit };
+        if (statusFilter) params.status = statusFilter;
+        const { data } = await api.get('/shipments', { params });
+        const chunk = data.items || [];
+        all.push(...chunk);
+        if (chunk.length < limit || p >= (data.totalPages || 0)) break;
+        p += 1;
+      }
+    } catch {
+      pushNotification({ type: 'info', message: 'Export failed' });
+      return;
+    }
     const rows = [
       ['trackingNumber', 'status', 'origin', 'destination', 'vehicle', 'customerEmail', 'eta'].join(','),
-      ...shipments.map((s) =>
+      ...all.map((s) =>
         [
           s.trackingNumber,
           s.status,
@@ -117,6 +150,7 @@ export default function ShipmentsPage() {
     a.download = `shipments-${Date.now()}.csv`;
     a.click();
     URL.revokeObjectURL(url);
+    pushNotification({ type: 'status', message: `Exported ${all.length} row(s)` });
   };
 
   if (loading) {
@@ -136,7 +170,20 @@ export default function ShipmentsPage() {
             {isCustomer ? 'Orders linked to your account' : 'Monitor and manage network flows'}
           </p>
         </div>
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          <div>
+            <label className="sr-only">Filter by status</label>
+            <select
+              className="rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 px-3 py-2 text-sm"
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+            >
+              <option value="">All statuses</option>
+              <option value="pending">Pending</option>
+              <option value="in_transit">In transit</option>
+              <option value="delivered">Delivered</option>
+            </select>
+          </div>
           {canExport && (
             <button
               type="button"
@@ -165,6 +212,32 @@ export default function ShipmentsPage() {
           {shipments.map((s) => (
             <ShipmentCard key={s._id} shipment={s} />
           ))}
+        </div>
+      )}
+
+      {meta.totalPages > 1 && (
+        <div className="flex flex-wrap items-center justify-between gap-3 pt-2 text-sm text-slate-600 dark:text-slate-400">
+          <span>
+            Page {page} of {meta.totalPages} ({meta.total} total)
+          </span>
+          <div className="flex gap-2">
+            <button
+              type="button"
+              disabled={page <= 1}
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+              className="rounded-lg border border-slate-200 dark:border-slate-700 px-3 py-1.5 disabled:opacity-40"
+            >
+              Previous
+            </button>
+            <button
+              type="button"
+              disabled={page >= meta.totalPages}
+              onClick={() => setPage((p) => p + 1)}
+              className="rounded-lg border border-slate-200 dark:border-slate-700 px-3 py-1.5 disabled:opacity-40"
+            >
+              Next
+            </button>
+          </div>
         </div>
       )}
 

@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import mongoose from 'mongoose';
 import Shipment from '../models/Shipment.js';
 import User from '../models/User.js';
 import { authRequired } from '../middleware/auth.js';
@@ -68,17 +69,62 @@ router.post('/', async (req, res, next) => {
   }
 });
 
+router.get('/stats', async (req, res, next) => {
+  try {
+    const match = {};
+    if (req.userRole === 'customer') {
+      match.customer = new mongoose.Types.ObjectId(req.userId);
+    }
+    const agg = await Shipment.aggregate([
+      { $match: match },
+      { $group: { _id: '$status', n: { $sum: 1 } } },
+    ]);
+    const by = Object.fromEntries(agg.map((x) => [x._id, x.n]));
+    const total = agg.reduce((s, x) => s + x.n, 0);
+    res.json({
+      total,
+      pending: by.pending || 0,
+      in_transit: by.in_transit || 0,
+      delivered: by.delivered || 0,
+    });
+  } catch (e) {
+    next(e);
+  }
+});
+
 router.get('/', async (req, res, next) => {
   try {
     const filter = {};
     if (req.userRole === 'customer') {
       filter.customer = req.userId;
     }
-    const list = await Shipment.find(filter)
-      .sort({ updatedAt: -1 })
-      .populate('customer', 'name email')
-      .populate('assignedDriver', 'name email');
-    res.json(list);
+    const st = req.query.status;
+    if (['pending', 'in_transit', 'delivered'].includes(st)) {
+      filter.status = st;
+    }
+
+    const limit = Math.min(Math.max(parseInt(String(req.query.limit), 10) || 20, 1), 100);
+    const page = Math.max(parseInt(String(req.query.page), 10) || 1, 1);
+    const skip = (page - 1) * limit;
+
+    const [items, total] = await Promise.all([
+      Shipment.find(filter)
+        .sort({ updatedAt: -1 })
+        .skip(skip)
+        .limit(limit)
+        .populate('customer', 'name email')
+        .populate('assignedDriver', 'name email')
+        .lean(),
+      Shipment.countDocuments(filter),
+    ]);
+
+    res.json({
+      items,
+      total,
+      page,
+      limit,
+      totalPages: total === 0 ? 0 : Math.ceil(total / limit),
+    });
   } catch (e) {
     next(e);
   }

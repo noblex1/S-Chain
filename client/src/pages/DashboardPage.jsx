@@ -1,23 +1,35 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import api from '../api';
 import { useAuth } from '../context/AuthContext.jsx';
 import ShipmentCard from '../components/ShipmentCard.jsx';
 import StatusBadge from '../components/StatusBadge.jsx';
 
+const emptyStats = { total: 0, pending: 0, in_transit: 0, delivered: 0 };
+
 export default function DashboardPage() {
   const { user, isAdmin, isLogistics, isCustomer } = useAuth();
-  const [shipments, setShipments] = useState([]);
+  const [stats, setStats] = useState(emptyStats);
+  const [recent, setRecent] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     let cancelled = false;
     (async () => {
       try {
-        const { data } = await api.get('/shipments');
-        if (!cancelled) setShipments(data);
+        const [statsRes, listRes] = await Promise.all([
+          api.get('/shipments/stats'),
+          api.get('/shipments', { params: { page: 1, limit: 5 } }),
+        ]);
+        if (!cancelled) {
+          setStats(statsRes.data);
+          setRecent(listRes.data.items || []);
+        }
       } catch {
-        if (!cancelled) setShipments([]);
+        if (!cancelled) {
+          setStats(emptyStats);
+          setRecent([]);
+        }
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -26,16 +38,6 @@ export default function DashboardPage() {
       cancelled = true;
     };
   }, []);
-
-  const stats = useMemo(() => {
-    const total = shipments.length;
-    const active = shipments.filter((s) => s.status === 'in_transit').length;
-    const done = shipments.filter((s) => s.status === 'delivered').length;
-    const pending = shipments.filter((s) => s.status === 'pending').length;
-    return { total, active, done, pending };
-  }, [shipments]);
-
-  const recent = useMemo(() => shipments.slice(0, 5), [shipments]);
 
   if (loading) {
     return (
@@ -62,16 +64,16 @@ export default function DashboardPage() {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <StatCard label="Total shipments" value={stats.total} accent="bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900" />
           <StatCard label="Pending" value={stats.pending} accent="bg-amber-500 text-white" />
-          <StatCard label="Active deliveries" value={stats.active} accent="bg-sky-600 text-white" />
-          <StatCard label="Completed" value={stats.done} accent="bg-emerald-600 text-white" />
+          <StatCard label="Active deliveries" value={stats.in_transit} accent="bg-sky-600 text-white" />
+          <StatCard label="Completed" value={stats.delivered} accent="bg-emerald-600 text-white" />
         </div>
       )}
 
       {isCustomer && (
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <StatCard label="My shipments" value={stats.total} accent="bg-brand-600 text-white" />
-          <StatCard label="On the road" value={stats.active} accent="bg-sky-600 text-white" />
-          <StatCard label="Delivered" value={stats.done} accent="bg-emerald-600 text-white" />
+          <StatCard label="On the road" value={stats.in_transit} accent="bg-sky-600 text-white" />
+          <StatCard label="Delivered" value={stats.delivered} accent="bg-emerald-600 text-white" />
         </div>
       )}
 
