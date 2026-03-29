@@ -1,14 +1,15 @@
 import { useEffect, useState } from 'react';
-import { NavLink, Outlet } from 'react-router-dom';
+import { Link, NavLink, Outlet } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.jsx';
 
-const nav = [
+const baseNav = [
   { to: '/', label: 'Dashboard', end: true },
   { to: '/shipments', label: 'Shipments' },
 ];
 
 export default function Layout() {
-  const { user, logout } = useAuth();
+  const { user, logout, isAdmin } = useAuth();
+  const nav = isAdmin ? [...baseNav, { to: '/admin/users', label: 'Team & users' }] : baseNav;
   const [dark, setDark] = useState(() => document.documentElement.classList.contains('dark'));
 
   useEffect(() => {
@@ -70,15 +71,24 @@ export default function Layout() {
       </aside>
 
       <div className="flex-1 flex flex-col min-w-0">
-        <header className="md:hidden flex items-center justify-between px-4 py-3 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900">
+        <header className="md:hidden flex items-center justify-between gap-2 px-4 py-3 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900">
           <span className="font-display font-bold text-brand-600">S-Chain</span>
-          <button
-            type="button"
-            onClick={() => setDark((d) => !d)}
-            className="text-xs font-medium text-slate-600 dark:text-slate-300"
-          >
-            Theme
-          </button>
+          <div className="flex items-center gap-3 text-xs font-medium">
+            {isAdmin && (
+              <Link to="/admin/users" className="text-brand-600 dark:text-brand-400">
+                Team
+              </Link>
+            )}
+            <NavLink to="/shipments" className="text-slate-600 dark:text-slate-300">
+              Shipments
+            </NavLink>
+            <NavLink to="/" end className="text-slate-600 dark:text-slate-300">
+              Home
+            </NavLink>
+            <button type="button" onClick={() => setDark((d) => !d)} className="text-slate-600 dark:text-slate-300">
+              Theme
+            </button>
+          </div>
         </header>
         <header className="hidden md:flex items-center justify-between px-8 py-5 border-b border-slate-200 dark:border-slate-800 bg-white/80 dark:bg-slate-900/80 backdrop-blur">
           <h1 className="font-display text-lg font-semibold text-slate-900 dark:text-white">

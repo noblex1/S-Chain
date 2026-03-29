@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import api from '../api';
+import PasswordInput from '../components/PasswordInput.jsx';
 
 export default function BootstrapAdminPage() {
   const [name, setName] = useState('');
@@ -48,12 +49,13 @@ export default function BootstrapAdminPage() {
             onChange={(e) => setEmail(e.target.value)}
             required
           />
-          <input
-            className="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm"
+          <PasswordInput
+            wrapperClassName=""
+            className="!border-slate-700 !bg-slate-950 text-white placeholder:text-slate-500"
             placeholder="Password"
-            type="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
+            autoComplete="new-password"
             required
           />
           <button
