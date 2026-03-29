@@ -6,6 +6,7 @@ export function verifyAccessToken(token) {
   if (!token || typeof token !== 'string') return null;
   try {
     const payload = jwt.verify(token.trim(), process.env.JWT_SECRET);
+    if (payload.kind != null && payload.kind !== 'access') return null;
     const sub = payload.sub;
     const role = payload.role;
     if (!sub || !role) return null;

@@ -34,3 +34,12 @@ export const authBootstrapLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
 });
+
+/** Token refresh: moderate cap per IP */
+export const authRefreshLimiter = rateLimit({
+  windowMs: numEnv('AUTH_REFRESH_WINDOW_MS', 15 * 60 * 1000),
+  max: numEnv('AUTH_REFRESH_MAX', 60),
+  message: { message: 'Too many token refresh attempts. Try again later.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});

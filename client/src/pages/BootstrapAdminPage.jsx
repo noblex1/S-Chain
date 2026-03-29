@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import api from '../api';
+import api, { setAuthToken } from '../api';
 import PasswordInput from '../components/PasswordInput.jsx';
 
 export default function BootstrapAdminPage() {
@@ -16,7 +16,15 @@ export default function BootstrapAdminPage() {
     setLoading(true);
     try {
       const { data } = await api.post('/auth/bootstrap-admin', { name, email, password });
-      localStorage.setItem('s-chain-auth', JSON.stringify({ token: data.token, user: data.user }));
+      localStorage.setItem(
+        's-chain-auth',
+        JSON.stringify({
+          accessToken: data.accessToken,
+          refreshToken: data.refreshToken,
+          user: data.user,
+        })
+      );
+      setAuthToken(data.accessToken);
       window.location.href = '/';
     } catch (err) {
       setError(err.response?.data?.message || 'Could not create admin');

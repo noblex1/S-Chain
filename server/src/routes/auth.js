@@ -1,21 +1,19 @@
 import { Router } from 'express';
 import bcrypt from 'bcryptjs';
-import jwt from 'jsonwebtoken';
 import User from '../models/User.js';
+import RefreshToken from '../models/RefreshToken.js';
 import {
   authBootstrapLimiter,
   authLoginLimiter,
+  authRefreshLimiter,
   authRegisterLimiter,
 } from '../middleware/rateLimitAuth.js';
+import { createSessionForUser, hashRefreshToken } from '../utils/sessionTokens.js';
 
 const router = Router();
 
-function signToken(user) {
-  return jwt.sign(
-    { sub: user._id.toString(), role: user.role },
-    process.env.JWT_SECRET,
-    { expiresIn: user.role === 'customer' ? '30d' : '7d' }
-  );
+function userResponse(user) {
+  return { id: user._id, name: user.name, email: user.email, role: user.role };
 }
 
 router.post('/register', authRegisterLimiter, async (req, res, next) => {
@@ -30,17 +28,17 @@ router.post('/register', authRegisterLimiter, async (req, res, next) => {
     if (existing) return res.status(409).json({ message: 'Email already registered' });
     const hash = await bcrypt.hash(password, 10);
     const user = await User.create({ name, email, password: hash, role: r });
-    const token = signToken(user);
+    const { accessToken, refreshToken } = await createSessionForUser(user);
     res.status(201).json({
-      token,
-      user: { id: user._id, name: user.name, email: user.email, role: user.role },
+      accessToken,
+      refreshToken,
+      user: userResponse(user),
     });
   } catch (e) {
     next(e);
   }
 });
 
-/** Bootstrap admin (only if no admin exists) */
 router.post('/bootstrap-admin', authBootstrapLimiter, async (req, res, next) => {
   try {
     const adminCount = await User.countDocuments({ role: 'admin' });
@@ -58,10 +56,11 @@ router.post('/bootstrap-admin', authBootstrapLimiter, async (req, res, next) => 
       password: hash,
       role: 'admin',
     });
-    const token = signToken(user);
+    const { accessToken, refreshToken } = await createSessionForUser(user);
     res.status(201).json({
-      token,
-      user: { id: user._id, name: user.name, email: user.email, role: user.role },
+      accessToken,
+      refreshToken,
+      user: userResponse(user),
     });
   } catch (e) {
     next(e);
@@ -78,16 +77,47 @@ router.post('/login', authLoginLimiter, async (req, res, next) => {
     if (!user || !(await bcrypt.compare(password, user.password))) {
       return res.status(401).json({ message: 'Invalid credentials' });
     }
-    const token = signToken(user);
+    const { accessToken, refreshToken } = await createSessionForUser(user);
     res.json({
-      token,
-      user: {
-        id: user._id,
-        name: user.name,
-        email: user.email,
-        role: user.role,
-      },
+      accessToken,
+      refreshToken,
+      user: userResponse(user),
     });
+  } catch (e) {
+    next(e);
+  }
+});
+
+router.post('/refresh', authRefreshLimiter, async (req, res, next) => {
+  try {
+    const raw = String(req.body.refreshToken || '').trim();
+    if (!raw) {
+      return res.status(400).json({ message: 'refreshToken is required' });
+    }
+    const tokenHash = hashRefreshToken(raw);
+    const doc = await RefreshToken.findOne({ tokenHash });
+    if (!doc || doc.expiresAt < new Date()) {
+      return res.status(401).json({ message: 'Invalid or expired refresh token' });
+    }
+    await RefreshToken.deleteOne({ _id: doc._id });
+    const user = await User.findById(doc.userId);
+    if (!user) {
+      return res.status(401).json({ message: 'User no longer exists' });
+    }
+    const { accessToken, refreshToken } = await createSessionForUser(user);
+    res.json({ accessToken, refreshToken });
+  } catch (e) {
+    next(e);
+  }
+});
+
+router.post('/logout', async (req, res, next) => {
+  try {
+    const raw = String(req.body.refreshToken || '').trim();
+    if (raw) {
+      await RefreshToken.deleteMany({ tokenHash: hashRefreshToken(raw) });
+    }
+    res.json({ ok: true });
   } catch (e) {
     next(e);
   }
