@@ -16,26 +16,23 @@ export function SocketProvider({ children }) {
       `${window.location.protocol}//${window.location.hostname}:5000`;
 
     const s = io(url, {
-      autoConnect: !!token,
+      autoConnect: Boolean(token),
       transports: ['websocket', 'polling'],
+      auth: token ? { token } : {},
+    });
+
+    s.on('connect_error', () => {
+      /* Handshake failed (e.g. expired JWT); reconnect after re-login replaces socket */
     });
 
     setSocket(s);
 
     return () => {
+      s.removeAllListeners();
       s.disconnect();
       setSocket(null);
     };
-  }, [ready]);
-
-  useEffect(() => {
-    if (!socket) return;
-    if (token) {
-      if (!socket.connected) socket.connect();
-    } else {
-      socket.disconnect();
-    }
-  }, [socket, token]);
+  }, [ready, token]);
 
   const value = useMemo(() => ({ socket }), [socket]);
   return <SocketContext.Provider value={value}>{children}</SocketContext.Provider>;

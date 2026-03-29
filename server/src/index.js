@@ -4,6 +4,8 @@ import cors from 'cors';
 import { createServer } from 'http';
 import { Server } from 'socket.io';
 import mongoose from 'mongoose';
+import { verifyAccessToken } from './middleware/auth.js';
+import Shipment from './models/Shipment.js';
 import authRoutes from './routes/auth.js';
 import shipmentRoutes from './routes/shipments.js';
 import trackingRoutes from './routes/tracking.js';
@@ -31,12 +33,64 @@ const io = new Server(httpServer, {
 
 app.set('io', io);
 
+io.use((socket, next) => {
+  const raw =
+    socket.handshake.auth?.token ||
+    (typeof socket.handshake.headers.authorization === 'string' &&
+    socket.handshake.headers.authorization.startsWith('Bearer ')
+      ? socket.handshake.headers.authorization.slice(7)
+      : null);
+  const session = verifyAccessToken(raw);
+  if (!session) {
+    return next(new Error('Authentication required'));
+  }
+  socket.data.userId = session.userId;
+  socket.data.userRole = session.role;
+  next();
+});
+
 io.on('connection', (socket) => {
-  socket.on('join:shipment', (shipmentId) => {
-    if (shipmentId) socket.join(`shipment:${shipmentId}`);
-  });
   socket.on('leave:shipment', (shipmentId) => {
     if (shipmentId) socket.leave(`shipment:${shipmentId}`);
+  });
+
+  socket.on('join:shipment', async (shipmentId, ack) => {
+    const reply = typeof ack === 'function' ? ack : () => {};
+
+    if (!shipmentId || !mongoose.isValidObjectId(String(shipmentId))) {
+      socket.emit('shipment:join_denied', { shipmentId, message: 'Invalid shipment' });
+      reply({ ok: false, message: 'Invalid shipment' });
+      return;
+    }
+
+    try {
+      const shipment = await Shipment.findById(shipmentId).select('customer');
+      if (!shipment) {
+        socket.emit('shipment:join_denied', { shipmentId, message: 'Shipment not found' });
+        reply({ ok: false, message: 'Not found' });
+        return;
+      }
+
+      const uid = socket.data.userId;
+      const role = socket.data.userRole;
+      const isStaff = role === 'admin' || role === 'logistics_manager';
+      const isCustomer = shipment.customer?.toString() === uid;
+
+      if (!isStaff && !isCustomer) {
+        socket.emit('shipment:join_denied', {
+          shipmentId,
+          message: 'You do not have access to this shipment',
+        });
+        reply({ ok: false, message: 'Forbidden' });
+        return;
+      }
+
+      socket.join(`shipment:${shipmentId}`);
+      reply({ ok: true });
+    } catch {
+      socket.emit('shipment:join_denied', { shipmentId, message: 'Could not join room' });
+      reply({ ok: false, message: 'Server error' });
+    }
   });
 });
 

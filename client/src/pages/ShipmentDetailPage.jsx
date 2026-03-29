@@ -54,7 +54,28 @@ export default function ShipmentDetailPage() {
 
   useEffect(() => {
     if (!socket || !id) return;
-    socket.emit('join:shipment', id);
+
+    const joinRoom = () => {
+      socket.emit('join:shipment', id, (res) => {
+        if (res && !res.ok) {
+          pushNotification({
+            type: 'info',
+            message: res.message || 'Could not subscribe to live updates',
+          });
+        }
+      });
+    };
+    joinRoom();
+    socket.on('connect', joinRoom);
+
+    const onJoinDenied = (p) => {
+      pushNotification({
+        type: 'info',
+        message: p?.message || 'Live updates unavailable for this shipment',
+      });
+    };
+    socket.on('shipment:join_denied', onJoinDenied);
+
     const onLoc = (payload) => {
       if (String(payload.shipmentId) !== String(id)) return;
       setShipment((prev) =>
@@ -75,6 +96,8 @@ export default function ShipmentDetailPage() {
     socket.on('shipment:location', onLoc);
     socket.on('shipment:updated', onUpd);
     return () => {
+      socket.off('connect', joinRoom);
+      socket.off('shipment:join_denied', onJoinDenied);
       socket.emit('leave:shipment', id);
       socket.off('shipment:location', onLoc);
       socket.off('shipment:updated', onUpd);
