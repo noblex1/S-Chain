@@ -14,6 +14,10 @@ function canViewAll(role) {
   return role === 'admin' || role === 'logistics_manager';
 }
 
+function escapeRegex(s) {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
 router.post('/', async (req, res, next) => {
   try {
     if (!canViewAll(req.userRole) && req.userRole !== 'customer') {
@@ -101,6 +105,12 @@ router.get('/', async (req, res, next) => {
     const st = req.query.status;
     if (['pending', 'in_transit', 'delivered'].includes(st)) {
       filter.status = st;
+    }
+
+    const rawQ = String(req.query.q ?? '').trim();
+    if (rawQ.length > 0) {
+      const q = rawQ.slice(0, 64);
+      filter.trackingNumber = new RegExp(escapeRegex(q), 'i');
     }
 
     const limit = Math.min(Math.max(parseInt(String(req.query.limit), 10) || 20, 1), 100);

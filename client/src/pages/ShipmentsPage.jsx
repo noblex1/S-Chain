@@ -14,6 +14,8 @@ export default function ShipmentsPage() {
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
   const [statusFilter, setStatusFilter] = useState('');
+  const [searchDraft, setSearchDraft] = useState('');
+  const [trackingQuery, setTrackingQuery] = useState('');
   const [meta, setMeta] = useState({ total: 0, totalPages: 0, limit: 20 });
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState({
@@ -36,6 +38,7 @@ export default function ShipmentsPage() {
     try {
       const params = { page, limit: 12 };
       if (statusFilter) params.status = statusFilter;
+      if (trackingQuery) params.q = trackingQuery;
       const { data } = await api.get('/shipments', { params });
       setShipments(data.items || []);
       setMeta({
@@ -49,15 +52,20 @@ export default function ShipmentsPage() {
     } finally {
       setLoading(false);
     }
-  }, [page, statusFilter]);
+  }, [page, statusFilter, trackingQuery]);
 
   useEffect(() => {
     load();
   }, [load]);
 
   useEffect(() => {
+    const t = setTimeout(() => setTrackingQuery(searchDraft.trim()), 350);
+    return () => clearTimeout(t);
+  }, [searchDraft]);
+
+  useEffect(() => {
     setPage(1);
-  }, [statusFilter]);
+  }, [statusFilter, trackingQuery]);
 
   useEffect(() => {
     (async () => {
@@ -119,6 +127,7 @@ export default function ShipmentsPage() {
       while (p <= maxPages) {
         const params = { page: p, limit };
         if (statusFilter) params.status = statusFilter;
+        if (trackingQuery) params.q = trackingQuery;
         const { data } = await api.get('/shipments', { params });
         const chunk = data.items || [];
         all.push(...chunk);
@@ -203,6 +212,21 @@ export default function ShipmentsPage() {
             </button>
           )}
         </div>
+      </div>
+
+      <div className="max-w-md">
+        <label htmlFor="tracking-search" className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">
+          Search by tracking number
+        </label>
+        <input
+          id="tracking-search"
+          type="search"
+          value={searchDraft}
+          onChange={(e) => setSearchDraft(e.target.value)}
+          placeholder="e.g. SC- or partial match"
+          autoComplete="off"
+          className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 px-3 py-2 text-sm"
+        />
       </div>
 
       {shipments.length === 0 ? (
