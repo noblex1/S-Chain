@@ -3,6 +3,7 @@ import Shipment from '../models/Shipment.js';
 import User from '../models/User.js';
 import { authRequired } from '../middleware/auth.js';
 import { distanceKm, etaFromRemainingKm } from '../utils/geo.js';
+import { writeAudit } from '../utils/audit.js';
 
 const router = Router();
 
@@ -50,6 +51,17 @@ router.post('/', async (req, res, next) => {
       .populate('assignedDriver', 'name email');
 
     req.app.get('io')?.emit('shipment:created', { shipment: populated });
+    await writeAudit(req, {
+      action: 'create',
+      resourceType: 'shipment',
+      resourceId: shipment._id,
+      summary: `Created shipment ${shipment.trackingNumber}`,
+      details: {
+        trackingNumber: shipment.trackingNumber,
+        customerId: String(customerId),
+        status: shipment.status,
+      },
+    });
     res.status(201).json(populated);
   } catch (e) {
     next(e);
@@ -142,6 +154,20 @@ router.put('/:id', async (req, res, next) => {
       });
     }
 
+    const touched = allowed.filter((k) => updates[k] !== undefined);
+    await writeAudit(req, {
+      action: 'update',
+      resourceType: 'shipment',
+      resourceId: s._id,
+      summary: `Updated shipment ${populated.trackingNumber}`,
+      details: {
+        touched,
+        statusBefore: prevStatus,
+        statusAfter: populated.status,
+        trackingNumber: populated.trackingNumber,
+      },
+    });
+
     res.json(populated);
   } catch (e) {
     next(e);
@@ -153,8 +179,16 @@ router.delete('/:id', async (req, res, next) => {
     if (req.userRole !== 'admin') {
       return res.status(403).json({ message: 'Only admin can delete' });
     }
-    const s = await Shipment.findByIdAndDelete(req.params.id);
+    const s = await Shipment.findById(req.params.id);
     if (!s) return res.status(404).json({ message: 'Shipment not found' });
+    await writeAudit(req, {
+      action: 'delete',
+      resourceType: 'shipment',
+      resourceId: s._id,
+      summary: `Deleted shipment ${s.trackingNumber}`,
+      details: { trackingNumber: s.trackingNumber, status: s.status },
+    });
+    await Shipment.findByIdAndDelete(req.params.id);
     req.app.get('io')?.emit('shipment:deleted', { id: req.params.id });
     res.json({ ok: true });
   } catch (e) {

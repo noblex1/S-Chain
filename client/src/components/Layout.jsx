@@ -9,7 +9,9 @@ const baseNav = [
 
 export default function Layout() {
   const { user, logout, isAdmin } = useAuth();
-  const nav = isAdmin ? [...baseNav, { to: '/admin/users', label: 'Team & users' }] : baseNav;
+  const nav = isAdmin
+    ? [...baseNav, { to: '/admin/users', label: 'Team & users' }, { to: '/admin/audit', label: 'Audit log' }]
+    : baseNav;
   const [dark, setDark] = useState(() => document.documentElement.classList.contains('dark'));
 
   useEffect(() => {
@@ -75,9 +77,14 @@ export default function Layout() {
           <span className="font-display font-bold text-brand-600">S-Chain</span>
           <div className="flex items-center gap-3 text-xs font-medium">
             {isAdmin && (
-              <Link to="/admin/users" className="text-brand-600 dark:text-brand-400">
-                Team
-              </Link>
+              <>
+                <Link to="/admin/users" className="text-brand-600 dark:text-brand-400">
+                  Team
+                </Link>
+                <Link to="/admin/audit" className="text-brand-600 dark:text-brand-400">
+                  Audit
+                </Link>
+              </>
             )}
             <NavLink to="/shipments" className="text-slate-600 dark:text-slate-300">
               Shipments

@@ -2,6 +2,11 @@ import { Router } from 'express';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import User from '../models/User.js';
+import {
+  authBootstrapLimiter,
+  authLoginLimiter,
+  authRegisterLimiter,
+} from '../middleware/rateLimitAuth.js';
 
 const router = Router();
 
@@ -13,7 +18,7 @@ function signToken(user) {
   );
 }
 
-router.post('/register', async (req, res, next) => {
+router.post('/register', authRegisterLimiter, async (req, res, next) => {
   try {
     const { name, email, password, role } = req.body;
     if (!name || !email || !password) {
@@ -36,7 +41,7 @@ router.post('/register', async (req, res, next) => {
 });
 
 /** Bootstrap admin (only if no admin exists) */
-router.post('/bootstrap-admin', async (req, res, next) => {
+router.post('/bootstrap-admin', authBootstrapLimiter, async (req, res, next) => {
   try {
     const adminCount = await User.countDocuments({ role: 'admin' });
     if (adminCount > 0) {
@@ -63,7 +68,7 @@ router.post('/bootstrap-admin', async (req, res, next) => {
   }
 });
 
-router.post('/login', async (req, res, next) => {
+router.post('/login', authLoginLimiter, async (req, res, next) => {
   try {
     const { email, password } = req.body;
     if (!email || !password) {

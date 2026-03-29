@@ -4,6 +4,7 @@ import mongoose from 'mongoose';
 import User from '../models/User.js';
 import Shipment from '../models/Shipment.js';
 import { authRequired, requireRoles } from '../middleware/auth.js';
+import { writeAudit } from '../utils/audit.js';
 
 const router = Router();
 
@@ -57,6 +58,13 @@ router.post('/', async (req, res, next) => {
       password: hash,
       role: r,
     });
+    await writeAudit(req, {
+      action: 'create',
+      resourceType: 'user',
+      resourceId: user._id,
+      summary: `Created user ${user.email}`,
+      details: { email: user.email, role: user.role, name: user.name },
+    });
     res.status(201).json({
       _id: user._id,
       name: user.name,
@@ -77,6 +85,8 @@ router.put('/:id', async (req, res, next) => {
     }
     const user = await User.findById(id).select('+password');
     if (!user) return res.status(404).json({ message: 'User not found' });
+
+    const before = { name: user.name, email: user.email, role: user.role };
 
     const { name, email, role, password } = req.body;
 
@@ -108,6 +118,17 @@ router.put('/:id', async (req, res, next) => {
     }
 
     await user.save();
+    await writeAudit(req, {
+      action: 'update',
+      resourceType: 'user',
+      resourceId: user._id,
+      summary: `Updated user ${user.email}`,
+      details: {
+        before,
+        after: { name: user.name, email: user.email, role: user.role },
+        passwordChanged: Boolean(password && String(password).length > 0),
+      },
+    });
     res.json({
       _id: user._id,
       name: user.name,
@@ -145,6 +166,13 @@ router.delete('/:id', async (req, res, next) => {
         message: 'User is linked to shipments. Reassign or remove those shipments first.',
       });
     }
+    await writeAudit(req, {
+      action: 'delete',
+      resourceType: 'user',
+      resourceId: user._id,
+      summary: `Deleted user ${user.email}`,
+      details: { email: user.email, role: user.role, name: user.name },
+    });
     await User.findByIdAndDelete(id);
     res.json({ ok: true });
   } catch (e) {
