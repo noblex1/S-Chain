@@ -49,7 +49,7 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-8">
-      <div>
+      <div className="surface p-6">
         <h2 className="font-display text-2xl font-bold text-slate-900 dark:text-white">
           Hello, {user?.name}
         </h2>
@@ -77,7 +77,7 @@ export default function DashboardPage() {
         </div>
       )}
 
-      <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/60 p-6">
+      <div className="surface p-6">
         <div className="flex items-center justify-between gap-4 mb-4">
           <h3 className="font-display font-semibold text-slate-900 dark:text-white">
             {isCustomer ? 'Your recent shipments' : 'Recent activity'}
@@ -121,9 +121,9 @@ export default function DashboardPage() {
 
 function StatCard({ label, value, accent }) {
   return (
-    <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 overflow-hidden shadow-sm">
-      <div className={`px-4 py-3 ${accent}`}>
-        <p className="text-xs font-medium uppercase tracking-wide opacity-90">{label}</p>
+    <div className="surface overflow-hidden">
+      <div className={`px-4 py-3 ${accent} rounded-t-2xl`}>
+        <p className="text-[11px] font-medium uppercase tracking-wider opacity-90">{label}</p>
         <p className="text-3xl font-display font-bold mt-1">{value}</p>
       </div>
     </div>

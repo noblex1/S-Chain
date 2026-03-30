@@ -24,7 +24,7 @@ export async function writeAudit(req, { action, resourceType, resourceId, summar
         actorEmail = u.email || '';
       }
     }
-    await AuditLog.create({
+    const created = await AuditLog.create({
       actorId: req.userId || null,
       actorRole: req.userRole || '',
       actorName,
@@ -36,6 +36,18 @@ export async function writeAudit(req, { action, resourceType, resourceId, summar
       summary: String(summary).slice(0, 2000),
       details: safeDetails(details),
     });
+    req.app
+      ?.get('io')
+      ?.emit('audit:created', {
+        _id: created._id,
+        createdAt: created.createdAt,
+        action: created.action,
+        resourceType: created.resourceType,
+        resourceId: created.resourceId,
+        summary: created.summary,
+        actorName: created.actorName,
+        actorRole: created.actorRole,
+      });
   } catch (e) {
     console.error('[audit]', e.message);
   }

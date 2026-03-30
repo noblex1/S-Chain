@@ -10,7 +10,12 @@ const baseNav = [
 export default function Layout() {
   const { user, logout, isAdmin } = useAuth();
   const nav = isAdmin
-    ? [...baseNav, { to: '/admin/users', label: 'Team & users' }, { to: '/admin/audit', label: 'Audit log' }]
+    ? [
+        ...baseNav,
+        { to: '/admin/monitor', label: 'Monitoring' },
+        { to: '/admin/users', label: 'Team & users' },
+        { to: '/admin/audit', label: 'Audit log' },
+      ]
     : baseNav;
   const [dark, setDark] = useState(() => document.documentElement.classList.contains('dark'));
 
@@ -26,8 +31,8 @@ export default function Layout() {
   }, []);
 
   return (
-    <div className="min-h-screen flex bg-slate-50 dark:bg-slate-950">
-      <aside className="hidden md:flex w-64 flex-col border-r border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900">
+    <div className="min-h-screen flex bg-transparent">
+      <aside className="hidden md:flex w-72 flex-col border-r border-slate-200/70 dark:border-slate-800/80 bg-white/90 dark:bg-slate-900/85 backdrop-blur-xl">
         <div className="p-6 border-b border-slate-100 dark:border-slate-800">
           <p className="font-display font-bold text-xl text-brand-600 dark:text-brand-400 tracking-tight">
             S-Chain
@@ -41,10 +46,10 @@ export default function Layout() {
               to={item.to}
               end={item.end}
               className={({ isActive }) =>
-                `block rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
+                `block rounded-xl px-3 py-2.5 text-sm font-medium transition-all ${
                   isActive
-                    ? 'bg-brand-50 text-brand-800 dark:bg-brand-950 dark:text-brand-200'
-                    : 'text-slate-600 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800'
+                    ? 'bg-brand-100/70 text-brand-900 dark:bg-brand-950 dark:text-brand-200'
+                    : 'text-slate-600 hover:bg-slate-100/80 dark:text-slate-400 dark:hover:bg-slate-800'
                 }`
               }
             >
@@ -55,17 +60,13 @@ export default function Layout() {
         <div className="p-4 border-t border-slate-100 dark:border-slate-800 text-sm">
           <p className="font-medium text-slate-900 dark:text-white truncate">{user?.name}</p>
           <p className="text-xs text-slate-500 capitalize">{user?.role?.replace('_', ' ')}</p>
-          <button
-            type="button"
-            onClick={() => setDark((d) => !d)}
-            className="mt-3 w-full rounded-lg border border-slate-200 dark:border-slate-700 py-2 text-xs font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800"
-          >
+          <button type="button" onClick={() => setDark((d) => !d)} className="mt-3 w-full btn-secondary">
             {dark ? 'Light mode' : 'Dark mode'}
           </button>
           <button
             type="button"
             onClick={logout}
-            className="mt-2 w-full rounded-lg bg-slate-900 dark:bg-brand-600 text-white py-2 text-xs font-medium hover:opacity-90"
+            className="mt-2 w-full rounded-lg bg-slate-900 dark:bg-brand-600 text-white py-2 text-xs font-medium transition hover:opacity-90"
           >
             Sign out
           </button>
@@ -73,11 +74,14 @@ export default function Layout() {
       </aside>
 
       <div className="flex-1 flex flex-col min-w-0">
-        <header className="md:hidden flex items-center justify-between gap-2 px-4 py-3 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900">
+        <header className="md:hidden flex items-center justify-between gap-2 px-4 py-3 border-b border-slate-200/80 dark:border-slate-800 bg-white/90 dark:bg-slate-900/90 backdrop-blur-lg">
           <span className="font-display font-bold text-brand-600">S-Chain</span>
           <div className="flex items-center gap-3 text-xs font-medium">
             {isAdmin && (
               <>
+                <Link to="/admin/monitor" className="text-brand-600 dark:text-brand-400">
+                  Monitor
+                </Link>
                 <Link to="/admin/users" className="text-brand-600 dark:text-brand-400">
                   Team
                 </Link>
@@ -97,7 +101,7 @@ export default function Layout() {
             </button>
           </div>
         </header>
-        <header className="hidden md:flex items-center justify-between px-8 py-5 border-b border-slate-200 dark:border-slate-800 bg-white/80 dark:bg-slate-900/80 backdrop-blur">
+        <header className="hidden md:flex items-center justify-between px-8 py-5 border-b border-slate-200/80 dark:border-slate-800 bg-white/75 dark:bg-slate-900/70 backdrop-blur-xl">
           <h1 className="font-display text-lg font-semibold text-slate-900 dark:text-white">
             Operations center
           </h1>

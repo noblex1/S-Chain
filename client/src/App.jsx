@@ -10,6 +10,7 @@ import ShipmentDetailPage from './pages/ShipmentDetailPage.jsx';
 import BootstrapAdminPage from './pages/BootstrapAdminPage.jsx';
 import AdminUsersPage from './pages/AdminUsersPage.jsx';
 import AdminAuditPage from './pages/AdminAuditPage.jsx';
+import AdminMonitoringPage from './pages/AdminMonitoringPage.jsx';
 
 function PrivateRoute({ children }) {
   const { token, ready } = useAuth();
@@ -43,6 +44,7 @@ export default function App() {
           <Route index element={<DashboardPage />} />
           <Route path="shipments" element={<ShipmentsPage />} />
           <Route path="shipments/:id" element={<ShipmentDetailPage />} />
+          <Route path="admin/monitor" element={<AdminMonitoringPage />} />
           <Route path="admin/users" element={<AdminUsersPage />} />
           <Route path="admin/audit" element={<AdminAuditPage />} />
         </Route>

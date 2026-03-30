@@ -172,7 +172,7 @@ export default function ShipmentsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-3">
+      <div className="surface p-5 flex flex-wrap items-center justify-between gap-3">
         <div>
           <h2 className="font-display text-2xl font-bold text-slate-900 dark:text-white">Shipments</h2>
           <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
@@ -183,7 +183,7 @@ export default function ShipmentsPage() {
           <div>
             <label className="sr-only">Filter by status</label>
             <select
-              className="rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 px-3 py-2 text-sm"
+              className="field-input mt-0"
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
             >
@@ -197,7 +197,7 @@ export default function ShipmentsPage() {
             <button
               type="button"
               onClick={exportCsv}
-              className="rounded-lg border border-slate-200 dark:border-slate-700 px-4 py-2 text-sm font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800"
+              className="btn-secondary"
             >
               Export CSV
             </button>
@@ -206,7 +206,7 @@ export default function ShipmentsPage() {
             <button
               type="button"
               onClick={() => setOpen(true)}
-              className="rounded-lg bg-brand-600 text-white px-4 py-2 text-sm font-semibold hover:bg-brand-700"
+              className="btn-primary"
             >
               New shipment
             </button>
@@ -214,7 +214,7 @@ export default function ShipmentsPage() {
         </div>
       </div>
 
-      <div className="max-w-md">
+      <div className="surface p-4 max-w-xl">
         <label htmlFor="tracking-search" className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">
           Search by tracking number
         </label>
@@ -225,12 +225,12 @@ export default function ShipmentsPage() {
           onChange={(e) => setSearchDraft(e.target.value)}
           placeholder="e.g. SC- or partial match"
           autoComplete="off"
-          className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 px-3 py-2 text-sm"
+          className="field-input mt-0"
         />
       </div>
 
       {shipments.length === 0 ? (
-        <p className="text-slate-500">No shipments found.</p>
+        <div className="surface p-8 text-center text-slate-500">No shipments found.</div>
       ) : (
         <div className="grid md:grid-cols-2 gap-4">
           {shipments.map((s) => (

@@ -11,6 +11,7 @@ import shipmentRoutes from './routes/shipments.js';
 import trackingRoutes from './routes/tracking.js';
 import userRoutes from './routes/users.js';
 import auditRoutes from './routes/audit.js';
+import analyticsRoutes from './routes/analytics.js';
 
 const PORT = process.env.PORT || 5000;
 const CLIENT_URL = process.env.CLIENT_URL || 'http://localhost:5173';
@@ -109,6 +110,7 @@ app.use('/api/shipments', shipmentRoutes);
 app.use('/api/tracking', trackingRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/audit', auditRoutes);
+app.use('/api/analytics', analyticsRoutes);
 
 app.use((err, _req, res, _next) => {
   console.error(err);

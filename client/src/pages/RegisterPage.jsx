@@ -28,8 +28,8 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-4 bg-gradient-to-br from-brand-50 via-white to-slate-100 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950">
-      <div className="w-full max-w-md rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-8 shadow-xl">
+    <div className="min-h-screen flex items-center justify-center px-4">
+      <div className="w-full max-w-md surface p-8 shadow-xl shadow-brand-100/40 dark:shadow-black/30">
         <h1 className="font-display text-2xl font-bold text-slate-900 dark:text-white">Create account</h1>
         <form onSubmit={onSubmit} className="mt-8 space-y-4">
           {error && (
@@ -38,18 +38,18 @@ export default function RegisterPage() {
             </div>
           )}
           <div>
-            <label className="block text-xs font-medium text-slate-600 dark:text-slate-400">Name</label>
+            <label className="field-label">Name</label>
             <input
-              className="mt-1 w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 px-3 py-2 text-sm"
+              className="field-input"
               value={name}
               onChange={(e) => setName(e.target.value)}
               required
             />
           </div>
           <div>
-            <label className="block text-xs font-medium text-slate-600 dark:text-slate-400">Email</label>
+            <label className="field-label">Email</label>
             <input
-              className="mt-1 w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 px-3 py-2 text-sm"
+              className="field-input"
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
@@ -57,7 +57,7 @@ export default function RegisterPage() {
             />
           </div>
           <div>
-            <label className="block text-xs font-medium text-slate-600 dark:text-slate-400">Password</label>
+            <label className="field-label">Password</label>
             <PasswordInput
               value={password}
               onChange={(e) => setPassword(e.target.value)}
@@ -67,9 +67,9 @@ export default function RegisterPage() {
             />
           </div>
           <div>
-            <label className="block text-xs font-medium text-slate-600 dark:text-slate-400">I am a</label>
+            <label className="field-label">I am a</label>
             <select
-              className="mt-1 w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 px-3 py-2 text-sm"
+              className="field-input"
               value={role}
               onChange={(e) => setRole(e.target.value)}
             >
@@ -80,7 +80,7 @@ export default function RegisterPage() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full rounded-lg bg-brand-600 text-white py-2.5 text-sm font-semibold hover:bg-brand-700 disabled:opacity-60"
+            className="w-full btn-primary py-2.5"
           >
             {loading ? 'Creating…' : 'Register'}
           </button>

@@ -15,7 +15,7 @@ export default function ShipmentCard({ shipment }) {
   return (
     <Link
       to={`/shipments/${id}`}
-      className="block rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/80 p-5 shadow-sm hover:shadow-md hover:border-brand-300 dark:hover:border-brand-700 transition-all"
+      className="block surface p-5 hover:shadow-md hover:border-brand-300 dark:hover:border-brand-700 transition-all"
     >
       <div className="flex flex-wrap items-start justify-between gap-2">
         <div>
